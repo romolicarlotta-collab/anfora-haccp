@@ -1,19 +1,29 @@
-export const dynamic = "force-dynamic";
+"use client";
 
-import { prisma } from "@/lib/prisma";
+import { useEffect, useState } from "react";
 import { Card, DataTable, PageHeader } from "@/components/ui";
 
-export default async function DocumentiPage() {
-  const attachments = await prisma.attachment.findMany({
-    include: {
-      supplier: true,
-      batch: true,
-    },
-    orderBy: { uploadedAt: "desc" },
-  });
+interface Attachment {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  uploadedAt: string;
+  supplier?: { name: string } | null;
+  batch?: { code: string } | null;
+}
 
-  function formatDate(d: Date): string {
-    return d.toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric" });
+export default function DocumentiPage() {
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+
+  useEffect(() => {
+    fetch("/api/documents")
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => setAttachments(Array.isArray(data) ? data : []))
+      .catch(() => setAttachments([]));
+  }, []);
+
+  function formatDate(d: string): string {
+    return new Date(d).toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric" });
   }
 
   return (
