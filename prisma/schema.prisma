@@ -1,0 +1,324 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum RoleKey {
+  ADMIN
+  HACCP_MANAGER
+  KITCHEN_MANAGER
+  KITCHEN_OPERATOR
+  BAR_OPERATOR
+  OWNER
+}
+
+enum BatchStatus {
+  ACTIVE
+  LOW_STOCK
+  DEPLETED
+  EXPIRED
+  BLOCKED
+}
+
+enum BatchKind {
+  SUPPLIER
+  PRODUCTION
+  DERIVED
+}
+
+enum RecipeCategory {
+  SEMILAVORATO
+  PRODOTTO_FINITO
+  PIATTO
+}
+
+enum CheckStatus {
+  PENDING
+  COMPLETED
+  OVERDUE
+}
+
+enum NonConformityStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+model Role {
+  id          String @id @default(cuid())
+  key         RoleKey @unique
+  name        String
+  description String?
+  users       User[]
+}
+
+model User {
+  id            String @id @default(cuid())
+  name          String
+  email         String @unique
+  passwordHash  String
+  roleId        String
+  role          Role @relation(fields: [roleId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  auditLogs     AuditLog[]
+  checks        HaccpCheck[]
+  temperatures  TemperatureLog[]
+  printLogs     LabelPrintLog[]
+}
+
+model OperationalArea {
+  id          String @id @default(cuid())
+  code        String @unique
+  name        String
+  description String?
+  batches     Batch[]
+  checks      HaccpCheck[]
+  temperatures TemperatureLog[]
+}
+
+model Supplier {
+  id            String @id @default(cuid())
+  name          String
+  vatNumber     String?
+  phone         String?
+  email         String?
+  notes         String?
+  batches       Batch[]
+  ingredients   Ingredient[]
+  attachments   Attachment[]
+  createdAt     DateTime @default(now())
+}
+
+model Ingredient {
+  id                   String @id @default(cuid())
+  name                 String
+  code                 String @unique
+  category             String
+  unitOfMeasure        String
+  allergens            String[]
+  standardShelfLifeDays Int
+  storageTemperature   String
+  preferredSupplierId  String?
+  preferredSupplier    Supplier? @relation(fields: [preferredSupplierId], references: [id])
+  haccpNotes           String?
+  recipeItems          RecipeItem[]
+  supplierBatches      Batch[] @relation("SupplierIngredient")
+  productionItems      ProductionBatchItem[]
+}
+
+model StorageLocation {
+  id          String @id @default(cuid())
+  code        String @unique
+  name        String
+  area        String
+  temperatureRange String?
+  batches     Batch[]
+}
+
+model Recipe {
+  id                  String @id @default(cuid())
+  name                String
+  code                String @unique
+  category            RecipeCategory
+  instructions        String
+  expectedYield       Decimal @db.Decimal(10, 2)
+  yieldUnit           String
+  finalAllergens      String[]
+  standardShelfLifeDays Int
+  items               RecipeItem[]
+  productionBatches   Batch[] @relation("ProductionRecipe")
+}
+
+model RecipeItem {
+  id           String @id @default(cuid())
+  recipeId     String
+  ingredientId String
+  quantity     Decimal @db.Decimal(10, 3)
+  unit         String
+  recipe       Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@unique([recipeId, ingredientId])
+}
+
+model Batch {
+  id                    String @id @default(cuid())
+  code                  String @unique
+  kind                  BatchKind
+  status                BatchStatus
+  productName           String
+  ingredientId          String?
+  ingredient            Ingredient? @relation("SupplierIngredient", fields: [ingredientId], references: [id])
+  recipeId              String?
+  recipe                Recipe? @relation("ProductionRecipe", fields: [recipeId], references: [id])
+  supplierId            String?
+  supplier              Supplier? @relation(fields: [supplierId], references: [id])
+  parentBatchId         String?
+  parentBatch           Batch? @relation("BatchHierarchy", fields: [parentBatchId], references: [id])
+  childBatches          Batch[] @relation("BatchHierarchy")
+  operationalAreaId     String?
+  operationalArea       OperationalArea? @relation(fields: [operationalAreaId], references: [id])
+  storageLocationId     String?
+  storageLocation       StorageLocation? @relation(fields: [storageLocationId], references: [id])
+  supplierLotCode       String?
+  quantityReceived      Decimal @db.Decimal(10, 3)
+  quantityAvailable     Decimal @db.Decimal(10, 3)
+  unitOfMeasure         String
+  lowStockThreshold     Decimal? @db.Decimal(10, 3)
+  dateReceived          DateTime?
+  producedAt            DateTime?
+  expiresAt             DateTime?
+  storageCondition      String?
+  inboundTemperature    Decimal? @db.Decimal(4, 1)
+  conformityOutcome     Boolean?
+  operatorName          String?
+  notes                 String?
+  allergens             String[]
+  genealogySnapshot     Json?
+  movements             BatchMovement[]
+  sourceItems           ProductionBatchItem[] @relation("ProducedBatch")
+  usedAsIngredientItems ProductionBatchItem[] @relation("ConsumedBatch")
+  labels                BatchLabel[]
+  attachments           Attachment[]
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([status, expiresAt])
+  @@index([parentBatchId])
+  @@index([ingredientId, supplierLotCode])
+}
+
+model ProductionBatchItem {
+  id             String @id @default(cuid())
+  producedBatchId String
+  consumedBatchId String
+  ingredientId   String?
+  quantityUsed   Decimal @db.Decimal(10, 3)
+  unitOfMeasure  String
+  producedBatch  Batch @relation("ProducedBatch", fields: [producedBatchId], references: [id], onDelete: Cascade)
+  consumedBatch  Batch @relation("ConsumedBatch", fields: [consumedBatchId], references: [id])
+  ingredient     Ingredient? @relation(fields: [ingredientId], references: [id])
+}
+
+model BatchMovement {
+  id          String @id @default(cuid())
+  batchId     String
+  batch       Batch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  movementType String
+  quantity    Decimal @db.Decimal(10, 3)
+  unitOfMeasure String
+  reason      String
+  sourceBatchId String?
+  targetBatchId String?
+  performedBy String
+  performedAt DateTime @default(now())
+
+  @@index([batchId, performedAt])
+}
+
+model BatchLabel {
+  id           String @id @default(cuid())
+  batchId      String
+  batch        Batch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  templateName String
+  version      Int @default(1)
+  qrPayload    String?
+  barcodeValue String?
+  createdAt    DateTime @default(now())
+  printLogs    LabelPrintLog[]
+}
+
+model LabelPrintLog {
+  id          String @id @default(cuid())
+  labelId     String
+  label       BatchLabel @relation(fields: [labelId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User @relation(fields: [userId], references: [id])
+  reason      String
+  copies      Int
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model HaccpCheck {
+  id                String @id @default(cuid())
+  title             String
+  checklistType     String
+  status            CheckStatus
+  dueAt             DateTime
+  completedAt       DateTime?
+  operationalAreaId String?
+  operationalArea   OperationalArea? @relation(fields: [operationalAreaId], references: [id])
+  assignedToId      String?
+  assignedTo        User? @relation(fields: [assignedToId], references: [id])
+  notes             String?
+}
+
+model TemperatureLog {
+  id                String @id @default(cuid())
+  title             String
+  value             Decimal @db.Decimal(4, 1)
+  minThreshold      Decimal? @db.Decimal(4, 1)
+  maxThreshold      Decimal? @db.Decimal(4, 1)
+  recordedAt        DateTime @default(now())
+  operationalAreaId String?
+  operationalArea   OperationalArea? @relation(fields: [operationalAreaId], references: [id])
+  recordedById      String?
+  recordedBy        User? @relation(fields: [recordedById], references: [id])
+  isAlert           Boolean @default(false)
+  notes             String?
+}
+
+model NonConformity {
+  id           String @id @default(cuid())
+  title        String
+  description  String
+  severity     String
+  status       NonConformityStatus
+  openedAt     DateTime @default(now())
+  closedAt     DateTime?
+  actions      CorrectiveAction[]
+}
+
+model CorrectiveAction {
+  id                String @id @default(cuid())
+  nonConformityId   String
+  nonConformity     NonConformity @relation(fields: [nonConformityId], references: [id], onDelete: Cascade)
+  description       String
+  owner             String
+  dueAt             DateTime?
+  completedAt       DateTime?
+}
+
+model Attachment {
+  id          String @id @default(cuid())
+  fileName    String
+  mimeType    String
+  url         String
+  supplierId  String?
+  supplier    Supplier? @relation(fields: [supplierId], references: [id])
+  batchId     String?
+  batch       Batch? @relation(fields: [batchId], references: [id])
+  uploadedAt  DateTime @default(now())
+}
+
+model AuditLog {
+  id          String @id @default(cuid())
+  userId      String?
+  user        User? @relation(fields: [userId], references: [id])
+  entityType  String
+  entityId    String
+  action      String
+  payload     Json?
+  createdAt   DateTime @default(now())
+
+  @@index([entityType, entityId, createdAt])
+}

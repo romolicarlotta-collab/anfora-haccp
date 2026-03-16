@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(155, 108, 56, 0.12), transparent 28%),
+    linear-gradient(180deg, #f7f1e8 0%, #f4efe6 100%);
+  color: #182026;
+}
+
+.font-serif {
+  font-family: var(--font-fraunces), serif;
+}
+
+body,
+.font-sans {
+  font-family: var(--font-manrope), sans-serif;
+}
