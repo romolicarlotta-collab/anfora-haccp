@@ -51,7 +51,7 @@ export async function POST(request: Request) {
             operatorName: payload.operatorName,
             notes: "Sublotto creato da porzionamento/travaso",
             allergens: parent.allergens,
-            genealogySnapshot: parent.genealogySnapshot
+            genealogySnapshot: parent.genealogySnapshot ?? undefined
           }
         });
         createdIds.push(child.id);

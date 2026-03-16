@@ -19,7 +19,7 @@ export function PageHeader({
         <p className="mt-2 max-w-3xl text-sm text-slate">{description}</p>
       </div>
       {actionLabel && actionHref ? (
-        <Link href={actionHref} className="inline-flex h-12 items-center justify-center rounded-full bg-brass px-5 text-sm font-semibold text-white">
+        <Link href={actionHref as never} className="inline-flex h-12 items-center justify-center rounded-full bg-brass px-5 text-sm font-semibold text-white">
           {actionLabel}
         </Link>
       ) : null}

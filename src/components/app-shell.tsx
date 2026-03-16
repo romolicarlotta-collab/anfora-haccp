@@ -200,7 +200,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                           key={alert.id}
                           onClick={() => {
                             setAlertPanelOpen(false);
-                            router.push(alert.link);
+                            router.push(alert.link as never);
                           }}
                           className="flex w-full items-start gap-3 rounded-2xl border border-black/5 bg-sand/50 px-4 py-3 text-left transition hover:bg-sand hover:shadow-panel active:scale-[0.98]"
                         >
@@ -253,7 +253,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               return (
                 <Link
                   key={item.href}
-                  href={item.href}
+                  href={item.href as never}
                   className={cn(
                     "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm transition active:scale-[0.98]",
                     isActive ? "bg-white text-ink font-semibold" : "text-white/76 hover:bg-white/10"

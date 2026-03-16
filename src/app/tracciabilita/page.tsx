@@ -109,11 +109,11 @@ export default function TracciabilitaPage() {
     }
   }
 
-  const backwardRows = result?.backward?.children
-    ? flattenNodes(result.backward.children, "backward")
+  const backwardRows = result?.backward?.length
+    ? flattenNodes(result.backward, "backward")
     : [];
-  const forwardRows = result?.forward?.children
-    ? flattenNodes(result.forward.children, "forward")
+  const forwardRows = result?.forward?.length
+    ? flattenNodes(result.forward, "forward")
     : [];
 
   return (

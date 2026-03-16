@@ -129,7 +129,7 @@ export default async function DashboardPage() {
             ].map((action) => {
               const Icon = action.icon;
               return (
-                <Link key={action.href} href={action.href} className="flex items-center justify-between rounded-3xl border border-black/5 bg-sand p-4 hover:border-brass">
+                <Link key={action.href} href={action.href as never} className="flex items-center justify-between rounded-3xl border border-black/5 bg-sand p-4 hover:border-brass">
                   <div className="flex items-center gap-3">
                     <div className="rounded-2xl bg-white p-3 shadow-panel">
                       <Icon className="h-5 w-5 text-brass" />

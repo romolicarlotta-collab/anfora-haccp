@@ -555,8 +555,8 @@ export default function RicevimentoMercePage() {
                 <span key={b.id} className="font-mono text-xs">{b.code}</span>,
                 b.ingredient?.name ?? b.productName,
                 `${b.quantityReceived} ${b.unitOfMeasure}`,
-                <Badge key={`${b.id}-badge`} tone={b.conformityOutcome === true ? "success" : b.conformityOutcome === false ? "danger" : "neutral"}>
-                  {b.conformityOutcome === true ? "Conforme" : b.conformityOutcome === false ? "Non conforme" : "N/A"}
+                <Badge key={`${b.id}-badge`} tone={b.conformityOutcome === "CONFORME" ? "success" : b.conformityOutcome === "NON_CONFORME" ? "danger" : "neutral"}>
+                  {b.conformityOutcome === "CONFORME" ? "Conforme" : b.conformityOutcome === "NON_CONFORME" ? "Non conforme" : "N/A"}
                 </Badge>,
               ])}
             />
