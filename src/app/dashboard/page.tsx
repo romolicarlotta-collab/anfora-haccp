@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { AlertTriangle, ArrowRight, ChefHat, ClipboardCheck, Printer, Thermometer } from "lucide-react";
 import { Badge, Card, DataTable, PageHeader } from "@/components/ui";
@@ -24,8 +26,6 @@ const checkStatusMap: Record<string, string> = {
   COMPLETED: "Completata",
   OVERDUE: "Scaduta",
 };
-
-export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const now = new Date();
